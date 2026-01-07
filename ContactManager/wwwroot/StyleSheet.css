@@ -1,4 +1,4 @@
-﻿body
+﻿body 
 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 18px;
@@ -17,11 +17,16 @@
     min-width: 500px;
 }
 
-.navbar
+.navbar 
 {
     background-color: #cacaca;
     padding: 10px;
-    box-shadow: 0px 1px 2px 2px #cacaca;
+    box-shadow: 0px 1px 2px 2px #cacaca; 
+}
+
+.centered {
+    max-width: 1400px;
+    margin-inline: auto;
 }
 
 .navbar-brand

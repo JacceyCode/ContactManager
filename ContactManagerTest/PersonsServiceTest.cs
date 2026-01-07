@@ -18,8 +18,8 @@ namespace ContactManagerTest
 
         public PersonsServiceTest(ITestOutputHelper testOutputHelper)
         {
-            _personsService = new PersonsService();
-            _countryService = new CountriesService();
+            _personsService = new PersonsService(false);
+            _countryService = new CountriesService(false);
             _testOutputHelper = testOutputHelper;
         }
 

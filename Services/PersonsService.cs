@@ -12,10 +12,76 @@ namespace Services
         private readonly List<Person> _persons;
         private readonly ICountriesService _countryService;
 
-        public PersonsService()
+        public PersonsService(bool initialize = true)
         {
             _persons = new List<Person>();
             _countryService = new CountriesService();
+
+            if (initialize)
+            {
+                _persons.AddRange(new List<Person>()
+                {
+                    new()
+                    {
+                        PersonId = Guid.Parse("348A27F6-B6F7-42A3-96C4-4761B55EAE1A"),
+                        PersonName = "John Doe",
+                        Email = "johndoe@example.com",
+                        Address = "123 Main St",
+                        DateOfBirth = new DateTime(2001, 1, 1),
+                        CountryId = Guid.Parse("C014565A-F840-4BEC-915E-FEEDF96BF421"),
+                        Gender = "Male",
+                        ReceiveNewsLetters = true,
+                    },
+
+                    new()
+                    {
+                        PersonId = Guid.Parse("9458296D-CE8E-429F-ACC9-5959828797FC"),
+                        PersonName = "James New",
+                        Email = "jamesnew@example.com",
+                        Address = "123 Main St",
+                        DateOfBirth = new DateTime(1997, 1, 1),
+                        CountryId = Guid.Parse("C014565A-F840-4BEC-915E-FEEDF96BF421"),
+                        Gender = "Male",
+                        ReceiveNewsLetters = true,
+                    },
+
+                    new()
+                    {
+                        PersonId = Guid.Parse("45F73264-4137-41C0-8E6C-F7EF31CE7596"),
+                        PersonName = "Joane Mills",
+                        Email = "joanemills@example.com",
+                        Address = "123 Main St",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        CountryId = Guid.Parse("5D797884-CE65-4FA7-B3EC-BB01E5858B39"),
+                        Gender = "Female",
+                        ReceiveNewsLetters = true,
+                    },
+
+                    new()
+                    {
+                        PersonId = Guid.Parse("B3DE8101-1A54-44E0-9444-C2C6D8DB58C2"),
+                        PersonName = "Damme Yul",
+                        Email = "dammeyul@example.com",
+                        Address = "123 Main St",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        CountryId = Guid.Parse("AB7CC0EA-528B-415F-8975-5A0177F7AF64"),
+                        Gender = "Female",
+                        ReceiveNewsLetters = true,
+                    },
+
+                    new()
+                    {
+                        PersonId = Guid.Parse("224CFAEB-397C-4A19-9B1E-4328AC9D3AF0"),
+                        PersonName = "Tosin Ayo",
+                        Email = "tosinayo@example.com",
+                        Address = "123 Main St",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        CountryId = Guid.Parse("04E97365-F1DB-424F-B900-E2BE2A19DB71"),
+                        Gender = "Male",
+                        ReceiveNewsLetters = true,
+                    }
+                });
+            }
         }
 
         private PersonResponse ConvertPersonToPersonResponse(Person person)
@@ -45,8 +111,6 @@ namespace Services
 
         public List<PersonResponse> GetAllPersons()
         {
-            //return _persons.Select(person => person.ToPersonResponse()).ToList();
-
             return _persons.Select(person => ConvertPersonToPersonResponse(person)).ToList();
         }
 
@@ -56,8 +120,6 @@ namespace Services
             {
                 return null;
             }
-
-            //return _persons.FirstOrDefault(person => person.PersonId == personId)?.ToPersonResponse();
 
             Person? person = _persons.FirstOrDefault(person => person.PersonId == personId);
             if (person == null)
@@ -80,7 +142,7 @@ namespace Services
 
             switch (searchBy)
             {
-                case nameof(Person.PersonName):
+                case nameof(PersonResponse.PersonName):
                     matchingPersons = allPersons
                         .Where(person => !string.IsNullOrEmpty(person.PersonName) ?
                                          person.PersonName
@@ -89,7 +151,7 @@ namespace Services
                     break;
 
 
-                case nameof(Person.Email):
+                case nameof(PersonResponse.Email):
                     matchingPersons = allPersons
                         .Where(person => !string.IsNullOrEmpty(person.Email) ?
                                          person.Email
@@ -98,7 +160,7 @@ namespace Services
                     break;
 
 
-                case nameof(Person.DateOfBirth):
+                case nameof(PersonResponse.DateOfBirth):
                     matchingPersons = allPersons
                         .Where(person => (person.DateOfBirth != null) ?
                                        person.DateOfBirth.Value.ToString("dd MMM yyyy")
@@ -107,16 +169,16 @@ namespace Services
                     break;
 
 
-                case nameof(Person.Gender):
+                case nameof(PersonResponse.Gender):
                     matchingPersons = allPersons
                         .Where(person => !string.IsNullOrEmpty(person.Gender) ?
                                          person.Gender
-                                             .Contains(searchString, StringComparison.OrdinalIgnoreCase) : true)
+                                             .StartsWith(searchString, StringComparison.OrdinalIgnoreCase) : true)
                         .ToList();
                     break;
 
 
-                case nameof(Person.CountryId):
+                case nameof(PersonResponse.CountryId):
                     matchingPersons = allPersons
                         .Where(person => !string.IsNullOrEmpty(person.Country) ?
                                          person.Country
@@ -125,7 +187,7 @@ namespace Services
                     break;
 
 
-                case nameof(Person.Address):
+                case nameof(PersonResponse.Address):
                     matchingPersons = allPersons
                         .Where(person => !string.IsNullOrEmpty(person.Address) ?
                                          person.Address
@@ -214,8 +276,7 @@ namespace Services
             matchingPerson.ReceiveNewsLetters = personUpdateRequest.ReceiveNewsLetters;
 
 
-            //return ConvertPersonToPersonResponse(matchingPerson);
-            return matchingPerson.ToPersonResponse();
+            return ConvertPersonToPersonResponse(matchingPerson);
         }
 
         public bool DeletePerson(Guid? personId)
