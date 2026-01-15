@@ -16,9 +16,16 @@ namespace ServiceContracts.DTO
 
         [Required(ErrorMessage = "Email can't be blank.")]
         [EmailAddress(ErrorMessage = "Email should be valid.")]
+        [DataType(DataType.EmailAddress)]
         public string? Email { get; set; }
+
+        [DataType(DataType.Date)]
         public DateTime? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Please select gender")]
         public GenderOptions? Gender { get; set; }
+
+        [Required(ErrorMessage = "Please select a country.")]
         public Guid? CountryId { get; set; }
         public string? Address { get; set; }
         public bool ReceiveNewsLetters { get; set; }

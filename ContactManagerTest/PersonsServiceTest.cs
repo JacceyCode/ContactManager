@@ -7,6 +7,7 @@ using System;
 using System.Net;
 using System.Reflection;
 using Xunit.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContactManagerTest
 {
@@ -18,8 +19,19 @@ namespace ContactManagerTest
 
         public PersonsServiceTest(ITestOutputHelper testOutputHelper)
         {
-            _personsService = new PersonsService(false);
-            _countryService = new CountriesService(false);
+            _countryService = new CountriesService(
+                new ContactManagerDbContext(
+                    new DbContextOptionsBuilder<ContactManagerDbContext>().Options
+                    )
+                );
+
+            _personsService = new PersonsService(
+                new ContactManagerDbContext(
+                    new DbContextOptionsBuilder<ContactManagerDbContext>().Options
+                    ),
+                _countryService
+                );
+            
             _testOutputHelper = testOutputHelper;
         }
 
@@ -27,18 +39,18 @@ namespace ContactManagerTest
         #region AddPerson Tests
         // When person is null, AddPerson should throw ArgumentNullException
         [Fact]
-        public void AddPerson_NullPersonAddRequest_ThrowsArgumentNullException()
+        public async Task AddPerson_NullPersonAddRequest_ThrowsArgumentNullException()
         {
             // Arrange
             PersonAddRequest? request = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => _personsService.AddPerson(request));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.AddPerson(request));
         }
 
         // When personName is null, throws ArgumentException
         [Fact]
-        public void AddPerson_NullPersonName_ThrowsArgumentException()
+        public async Task AddPerson_NullPersonName_ThrowsArgumentException()
         {
             // Arrange
             PersonAddRequest personAddRequest = new()
@@ -47,12 +59,12 @@ namespace ContactManagerTest
             };
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => _personsService.AddPerson(personAddRequest));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.AddPerson(personAddRequest));
         }
 
         // When valid PersonAddRequest is provided, AddPerson should return PersonResponse with same details
         [Fact]
-        public void AddPerson_ValidPersonAddRequest_ReturnsPersonResponse()
+        public async Task AddPerson_ValidPersonAddRequest_ReturnsPersonResponse()
         {
             // Arrange
             PersonAddRequest personAddRequest = new()
@@ -67,9 +79,9 @@ namespace ContactManagerTest
             };
 
             // Act
-            PersonResponse person = _personsService.AddPerson(personAddRequest);
+            PersonResponse person = await _personsService.AddPerson(personAddRequest);
 
-            List<PersonResponse> persons = _personsService.GetAllPersons();
+            List<PersonResponse> persons = await _personsService.GetAllPersons();
 
             // Assert
             Assert.NotNull(person);
@@ -84,13 +96,13 @@ namespace ContactManagerTest
         #region GetPersonByPersonId Tests
         // When personId is null, GetPersonByPersonId should return null
         [Fact]
-        public void GetPersonByPersonId_NullPersonId()
+        public async Task GetPersonByPersonId_NullPersonId()
         {
             // Arrange
             Guid? personId = null;
 
             // Act
-            PersonResponse? person = _personsService.GetPersonByPersonId(personId);
+            PersonResponse? person = await _personsService.GetPersonByPersonId(personId);
 
             // Assert
             Assert.Null(person);
@@ -98,14 +110,14 @@ namespace ContactManagerTest
 
         // When valid personId is provided, GetPersonByPersonId should return PersonResponse with same personId
         [Fact]
-        public void GetPersonByPersonId_ValidPersonId_ReturnsPersonResponse()
+        public async Task GetPersonByPersonId_ValidPersonId_ReturnsPersonResponse()
         {
             // Arrange
             CountryAddRequest countryRequest = new()
             {
                 CountryName = "Canada",
             };
-            CountryResponse countryResponse = _countryService.AddCountry(countryRequest);
+            CountryResponse countryResponse = await _countryService.AddCountry(countryRequest);
 
             // Act
             PersonAddRequest personAddRequest = new()
@@ -119,9 +131,9 @@ namespace ContactManagerTest
                 ReceiveNewsLetters = true,
             };
 
-            PersonResponse addedPerson = _personsService.AddPerson(personAddRequest);
+            PersonResponse addedPerson = await _personsService.AddPerson(personAddRequest);
 
-            PersonResponse? fetchedPerson = _personsService.GetPersonByPersonId(addedPerson.PersonId);
+            PersonResponse? fetchedPerson = await _personsService.GetPersonByPersonId(addedPerson.PersonId);
 
             // Assert
             Assert.NotNull(addedPerson);
@@ -135,10 +147,10 @@ namespace ContactManagerTest
         #region GetAllPersons Tests
         // GetAllPersons should return empty list when no persons are added
         [Fact]
-        public void GetAllPersons_NoPersonsAdded_ReturnsEmptyList()
+        public async Task GetAllPersons_NoPersonsAdded_ReturnsEmptyList()
         {
             // Act
-            List<PersonResponse> persons = _personsService.GetAllPersons();
+            List<PersonResponse> persons = await _personsService.GetAllPersons();
 
             // Assert
             Assert.NotNull(persons);
@@ -147,7 +159,7 @@ namespace ContactManagerTest
 
         // When multiple persons are added, GetAllPersons should return all added persons
         [Fact]
-        public void GetAllPersons_MultiplePersonsAdded_ReturnsAllPersons()
+        public async Task GetAllPersons_MultiplePersonsAdded_ReturnsAllPersons()
         {
             // Arrange
             CountryAddRequest countryRequest1 = new()
@@ -159,8 +171,8 @@ namespace ContactManagerTest
                 CountryName = "USA",
             };
 
-            CountryResponse countryResponse1 = _countryService.AddCountry(countryRequest1);
-            CountryResponse countryResponse2 = _countryService.AddCountry(countryRequest2);
+            CountryResponse countryResponse1 = await _countryService.AddCountry(countryRequest1);
+            CountryResponse countryResponse2 = await _countryService.AddCountry(countryRequest2);
 
             // Act
             PersonAddRequest personAddRequest1 = new()
@@ -205,12 +217,12 @@ namespace ContactManagerTest
 
             foreach (PersonAddRequest personRequest in persons_requests)
             {
-                PersonResponse personResponse = _personsService.AddPerson(personRequest);
+                PersonResponse personResponse = await _personsService.AddPerson(personRequest);
 
                 persons_response.Add(personResponse);
             }
 
-            List<PersonResponse> fetchedPersons = _personsService.GetAllPersons();
+            List<PersonResponse> fetchedPersons = await _personsService.GetAllPersons();
 
             // Print expected persons_reponse
             _testOutputHelper.WriteLine("Expected: ");
@@ -242,7 +254,7 @@ namespace ContactManagerTest
         #region GetFilteredPersons Tests
         // Returns a list of all persons if searchBy and searchString are empty
         [Fact]
-        public void GetFilteredPersons_EmptySearchText()
+        public async Task GetFilteredPersons_EmptySearchText()
         {
             // Arrange
             CountryAddRequest countryRequest1 = new()
@@ -254,8 +266,8 @@ namespace ContactManagerTest
                 CountryName = "USA",
             };
 
-            CountryResponse countryResponse1 = _countryService.AddCountry(countryRequest1);
-            CountryResponse countryResponse2 = _countryService.AddCountry(countryRequest2);
+            CountryResponse countryResponse1 = await _countryService.AddCountry(countryRequest1);
+            CountryResponse countryResponse2 = await _countryService.AddCountry(countryRequest2);
 
             // Act
             PersonAddRequest personAddRequest1 = new()
@@ -300,12 +312,12 @@ namespace ContactManagerTest
 
             foreach (PersonAddRequest personRequest in persons_requests)
             {
-                PersonResponse personResponse = _personsService.AddPerson(personRequest);
+                PersonResponse personResponse = await _personsService.AddPerson(personRequest);
 
                 persons_response.Add(personResponse);
             }
 
-            List<PersonResponse> filteredPersons = _personsService.GetFilteredPersons(nameof(Person.PersonName), "");
+            List<PersonResponse> filteredPersons = await _personsService.GetFilteredPersons(nameof(Person.PersonName), "");
 
             // Print expected persons_reponse
             _testOutputHelper.WriteLine("Expected: ");
@@ -334,7 +346,7 @@ namespace ContactManagerTest
 
         // Add few persons and search based on personName with searchString to return matching persons
         [Fact]
-        public void GetFilteredPersons_SearchByPersonName()
+        public async Task GetFilteredPersons_SearchByPersonName()
         {
             // Arrange
             CountryAddRequest countryRequest1 = new()
@@ -346,8 +358,8 @@ namespace ContactManagerTest
                 CountryName = "USA",
             };
 
-            CountryResponse countryResponse1 = _countryService.AddCountry(countryRequest1);
-            CountryResponse countryResponse2 = _countryService.AddCountry(countryRequest2);
+            CountryResponse countryResponse1 = await _countryService.AddCountry(countryRequest1);
+            CountryResponse countryResponse2 = await _countryService.AddCountry(countryRequest2);
 
             // Act
             PersonAddRequest personAddRequest1 = new()
@@ -392,12 +404,12 @@ namespace ContactManagerTest
 
             foreach (PersonAddRequest personRequest in persons_requests)
             {
-                PersonResponse personResponse = _personsService.AddPerson(personRequest);
+                PersonResponse personResponse = await _personsService.AddPerson(personRequest);
 
                 persons_response.Add(personResponse);
             }
 
-            List<PersonResponse> filteredPersons = _personsService.GetFilteredPersons(nameof(Person.PersonName), "ma"); // searchString = 'ma'
+            List<PersonResponse> filteredPersons = await _personsService.GetFilteredPersons(nameof(Person.PersonName), "ma"); // searchString = 'ma'
 
             // Assert
             foreach (PersonResponse person in persons_response)
@@ -414,7 +426,7 @@ namespace ContactManagerTest
         #region GetSortedPersons Tests
         // When sort based on PersonName in DESC order, persons should be sorted accordingly
         [Fact]
-        public void GetSortedPersons()
+        public async Task GetSortedPersons()
         {
             // Arrange
             CountryAddRequest countryRequest1 = new()
@@ -426,8 +438,8 @@ namespace ContactManagerTest
                 CountryName = "USA",
             };
 
-            CountryResponse countryResponse1 = _countryService.AddCountry(countryRequest1);
-            CountryResponse countryResponse2 = _countryService.AddCountry(countryRequest2);
+            CountryResponse countryResponse1 = await _countryService.AddCountry(countryRequest1);
+            CountryResponse countryResponse2 = await _countryService.AddCountry(countryRequest2);
 
             // Act
             PersonAddRequest personAddRequest1 = new()
@@ -472,13 +484,13 @@ namespace ContactManagerTest
 
             foreach (PersonAddRequest personRequest in persons_requests)
             {
-                PersonResponse personResponse = _personsService.AddPerson(personRequest);
+                PersonResponse personResponse = await _personsService.AddPerson(personRequest);
 
                 persons_response.Add(personResponse);
             }
-            List<PersonResponse> allPersons = _personsService.GetAllPersons();
+            List<PersonResponse> allPersons = await _personsService.GetAllPersons();
 
-            List<PersonResponse> sortedPersonsDesc = _personsService.GetSortedPersons(allPersons, nameof(Person.PersonName), SortOrderOptions.DESC);
+            List<PersonResponse> sortedPersonsDesc = await _personsService.GetSortedPersons(allPersons, nameof(Person.PersonName), SortOrderOptions.DESC);
 
             persons_response = persons_response.OrderByDescending(person => person.PersonName).ToList();
 
@@ -496,17 +508,17 @@ namespace ContactManagerTest
         #region UpdatePerson Tests
         // When person is null, UpdatePerson should throw ArgumentNullException
         [Fact]
-        public void UpdatePerson_NullPersonUpdateRequest_ThrowsArgumentNullException()
+        public async Task UpdatePerson_NullPersonUpdateRequest_ThrowsArgumentNullException()
         {
             // Arrange
             PersonUpdateRequest? request = null;
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => _personsService.UpdatePerson(request));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.UpdatePerson(request));
         }
 
         // When personId is not found, UpdatePerson should throw ArgumentException
         [Fact]
-        public void UpdatePerson_PersonIdNotFound_ThrowsArgumentException()
+        public async Task UpdatePerson_PersonIdNotFound_ThrowsArgumentException()
         {
             // Arrange
             PersonUpdateRequest personUpdateRequest = new()
@@ -517,20 +529,20 @@ namespace ContactManagerTest
             };
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => _personsService.UpdatePerson(personUpdateRequest));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
 
         }
 
         // When PersonName is null, UpdatePerson should throw ArgumentException
         [Fact]
-        public void UpdatePerson_NullPersonName_ThrowsArgumentException()
+        public async Task UpdatePerson_NullPersonName_ThrowsArgumentException()
         {
             // Arrange
             CountryAddRequest countryRequest = new()
             {
                 CountryName = "Canada",
             };
-            CountryResponse countryResponse = _countryService.AddCountry(countryRequest);
+            CountryResponse countryResponse = await _countryService.AddCountry(countryRequest);
 
             PersonAddRequest personAddRequest = new()
             {
@@ -543,26 +555,26 @@ namespace ContactManagerTest
                 ReceiveNewsLetters = true,
             };
 
-            PersonResponse person = _personsService.AddPerson(personAddRequest);
+            PersonResponse person = await _personsService.AddPerson(personAddRequest);
 
             PersonUpdateRequest personUpdateRequest = person.ToPersonUpdateRequest();
             personUpdateRequest.PersonName = null;
             personUpdateRequest.Email = "tonydon@example.com";
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => _personsService.UpdatePerson(personUpdateRequest));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
         }
 
         // When valid PersonUpdateRequest is provided, UpdatePerson should return updated PersonResponse
         [Fact]
-        public void UpdatePerson_ValidPersonUpdateRequest_ReturnsUpdatedPersonResponse()
+        public async Task UpdatePerson_ValidPersonUpdateRequest_ReturnsUpdatedPersonResponse()
         {
             // Arrange
             CountryAddRequest countryRequest = new()
             {
                 CountryName = "Canada",
             };
-            CountryResponse countryResponse = _countryService.AddCountry(countryRequest);
+            CountryResponse countryResponse = await _countryService.AddCountry(countryRequest);
 
             PersonAddRequest personAddRequest = new()
             {
@@ -575,16 +587,16 @@ namespace ContactManagerTest
                 ReceiveNewsLetters = true,
             };
 
-            PersonResponse person = _personsService.AddPerson(personAddRequest);
+            PersonResponse person = await _personsService.AddPerson(personAddRequest);
 
             PersonUpdateRequest personUpdateRequest = person.ToPersonUpdateRequest();
             personUpdateRequest.PersonName = "Tony Don";
             personUpdateRequest.Email = "tonydon@example.com";
 
             // Act
-            PersonResponse updatedPerson = _personsService.UpdatePerson(personUpdateRequest);
+            PersonResponse updatedPerson = await _personsService.UpdatePerson(personUpdateRequest);
 
-            PersonResponse? personResponseFromId = _personsService.GetPersonByPersonId(updatedPerson.PersonId);
+            PersonResponse? personResponseFromId = await _personsService.GetPersonByPersonId(updatedPerson.PersonId);
 
             // Assert
             Assert.Equal(personResponseFromId, updatedPerson);
@@ -596,13 +608,13 @@ namespace ContactManagerTest
         #region DeletePerson Tests
         // When personId is invalid, DeletePerson should return false
         [Fact]
-        public void DeletePerson_InvalidPersonId_ReturnsFalse()
+        public async Task DeletePerson_InvalidPersonId_ReturnsFalse()
         {
             // Arrange
             Guid? personId = Guid.NewGuid();
 
             // Act
-            bool result = _personsService.DeletePerson(personId);
+            bool result = await _personsService.DeletePerson(personId);
 
             // Assert
             Assert.False(result);
@@ -610,14 +622,14 @@ namespace ContactManagerTest
 
         // When valid personId is provided, DeletePerson should return true
         [Fact]
-        public void DeletePerson_ValidPersonId_ReturnsTrue()
+        public async Task DeletePerson_ValidPersonId_ReturnsTrue()
         {
             // Arrange
             CountryAddRequest countryRequest = new()
             {
                 CountryName = "Canada",
             };
-            CountryResponse countryResponse = _countryService.AddCountry(countryRequest);
+            CountryResponse countryResponse = await _countryService.AddCountry(countryRequest);
 
             PersonAddRequest personAddRequest = new()
             {
@@ -630,16 +642,14 @@ namespace ContactManagerTest
                 ReceiveNewsLetters = true,
             };
 
-            PersonResponse person = _personsService.AddPerson(personAddRequest);
+            PersonResponse person = await _personsService.AddPerson(personAddRequest);
 
             // Act
-            bool isDeleted = _personsService.DeletePerson(person.PersonId);
+            bool isDeleted = await _personsService.DeletePerson(person.PersonId);
 
             // Assert
             Assert.True(isDeleted);
         }
-
-
         #endregion
     }
 }

@@ -15,14 +15,14 @@ namespace ServiceContracts
         /// <param name="personAddRequest">The request containing the details of the person to add. Cannot be null.</param>
         /// <returns>A response object containing information about the added person, including any generated identifiers or
         /// status information.</returns>
-        PersonResponse AddPerson(PersonAddRequest? personAddRequest);
+        Task<PersonResponse> AddPerson(PersonAddRequest? personAddRequest);
 
         /// <summary>
         /// Retrieves a list of all persons.
         /// </summary>
         /// <returns>A list of <see cref="PersonResponse"/> objects representing all persons. The list is empty if no persons are
         /// found.</returns>
-        List<PersonResponse> GetAllPersons();
+        Task<List<PersonResponse>> GetAllPersons();
 
         /// <summary>
         /// Retrieves person details for the specified person identifier.
@@ -30,7 +30,7 @@ namespace ServiceContracts
         /// <param name="personId">The unique identifier of the person to retrieve. If <paramref name="personId"/> is <see langword="null"/>,
         /// the method returns <see langword="null"/>.</param>
         /// <returns>A <see cref="PersonResponse"/> containing the person's details if found; otherwise, <see langword="null"/>.</returns>
-        PersonResponse? GetPersonByPersonId(Guid? personId);
+        Task<PersonResponse?> GetPersonByPersonId(Guid? personId);
 
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace ServiceContracts
         /// persons are returned.</param>
         /// <returns>A list of <see cref="PersonResponse"/> objects that match the search criteria. Returns an empty list if no
         /// persons match the criteria.</returns>
-        List<PersonResponse> GetFilteredPersons(string searchBy, string? searchString);
+        Task<List<PersonResponse>> GetFilteredPersons(string searchBy, string? searchString);
 
         /// <summary>
         /// Returns a list of persons sorted according to the specified property and sort order.
@@ -53,7 +53,7 @@ namespace ServiceContracts
         /// <param name="sortOrder">ASC or DESC</param>
         /// <returns>A new list of PersonResponse objects sorted by the specified property and order. If the input list is empty,
         /// returns an empty list.</returns>
-        List<PersonResponse> GetSortedPersons(List<PersonResponse> allPersons, string sortBy, SortOrderOptions sortOrder);
+        Task<List<PersonResponse>> GetSortedPersons(List<PersonResponse> allPersons, string sortBy, SortOrderOptions sortOrder);
 
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace ServiceContracts
         /// </summary>
         /// <param name="personUpdateRequest">An object containing the updated information for the person. Cannot be null.</param>
         /// <returns>A response object containing the updated details of the person.</returns>
-        PersonResponse UpdatePerson(PersonUpdateRequest? personUpdateRequest);
+        Task<PersonResponse> UpdatePerson(PersonUpdateRequest? personUpdateRequest);
 
 
         /// <summary>
@@ -70,6 +70,6 @@ namespace ServiceContracts
         /// <param name="personId">The unique identifier of the person to delete. Specify <see langword="null"/> to indicate that no person
         /// should be deleted.</param>
         /// <returns><see langword="true"/> if the person was successfully deleted; otherwise, <see langword="false"/>.</returns>
-        bool DeletePerson(Guid? personId);
+        Task<bool> DeletePerson(Guid? personId);
     }
 }

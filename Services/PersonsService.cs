@@ -1,5 +1,6 @@
 ﻿using System;
 using Entities;
+using Microsoft.EntityFrameworkCore;
 using ServiceContracts;
 using ServiceContracts.DTO;
 using ServiceContracts.Enums;
@@ -9,90 +10,16 @@ namespace Services
 {
     public class PersonsService : IPersonsService
     {
-        private readonly List<Person> _persons;
+        private readonly ContactManagerDbContext _db;
         private readonly ICountriesService _countryService;
 
-        public PersonsService(bool initialize = true)
+        public PersonsService(ContactManagerDbContext contactManagerDbContext, ICountriesService countryService)
         {
-            _persons = new List<Person>();
-            _countryService = new CountriesService();
-
-            if (initialize)
-            {
-                _persons.AddRange(new List<Person>()
-                {
-                    new()
-                    {
-                        PersonId = Guid.Parse("348A27F6-B6F7-42A3-96C4-4761B55EAE1A"),
-                        PersonName = "John Doe",
-                        Email = "johndoe@example.com",
-                        Address = "123 Main St",
-                        DateOfBirth = new DateTime(2001, 1, 1),
-                        CountryId = Guid.Parse("C014565A-F840-4BEC-915E-FEEDF96BF421"),
-                        Gender = "Male",
-                        ReceiveNewsLetters = true,
-                    },
-
-                    new()
-                    {
-                        PersonId = Guid.Parse("9458296D-CE8E-429F-ACC9-5959828797FC"),
-                        PersonName = "James New",
-                        Email = "jamesnew@example.com",
-                        Address = "123 Main St",
-                        DateOfBirth = new DateTime(1997, 1, 1),
-                        CountryId = Guid.Parse("C014565A-F840-4BEC-915E-FEEDF96BF421"),
-                        Gender = "Male",
-                        ReceiveNewsLetters = true,
-                    },
-
-                    new()
-                    {
-                        PersonId = Guid.Parse("45F73264-4137-41C0-8E6C-F7EF31CE7596"),
-                        PersonName = "Joane Mills",
-                        Email = "joanemills@example.com",
-                        Address = "123 Main St",
-                        DateOfBirth = new DateTime(1990, 1, 1),
-                        CountryId = Guid.Parse("5D797884-CE65-4FA7-B3EC-BB01E5858B39"),
-                        Gender = "Female",
-                        ReceiveNewsLetters = true,
-                    },
-
-                    new()
-                    {
-                        PersonId = Guid.Parse("B3DE8101-1A54-44E0-9444-C2C6D8DB58C2"),
-                        PersonName = "Damme Yul",
-                        Email = "dammeyul@example.com",
-                        Address = "123 Main St",
-                        DateOfBirth = new DateTime(1990, 1, 1),
-                        CountryId = Guid.Parse("AB7CC0EA-528B-415F-8975-5A0177F7AF64"),
-                        Gender = "Female",
-                        ReceiveNewsLetters = true,
-                    },
-
-                    new()
-                    {
-                        PersonId = Guid.Parse("224CFAEB-397C-4A19-9B1E-4328AC9D3AF0"),
-                        PersonName = "Tosin Ayo",
-                        Email = "tosinayo@example.com",
-                        Address = "123 Main St",
-                        DateOfBirth = new DateTime(1990, 1, 1),
-                        CountryId = Guid.Parse("04E97365-F1DB-424F-B900-E2BE2A19DB71"),
-                        Gender = "Male",
-                        ReceiveNewsLetters = true,
-                    }
-                });
-            }
+            _db = contactManagerDbContext;
+            _countryService = countryService;
         }
 
-        private PersonResponse ConvertPersonToPersonResponse(Person person)
-        {
-            PersonResponse personResponse = person.ToPersonResponse();
-
-            personResponse.Country = _countryService.GetCountryByCountryId(personResponse.CountryId)?.CountryName;
-            return personResponse;
-        }
-
-        public PersonResponse AddPerson(PersonAddRequest? personAddRequest)
+        public async Task<PersonResponse> AddPerson(PersonAddRequest? personAddRequest)
         {
             if (personAddRequest == null)
             {
@@ -104,35 +31,44 @@ namespace Services
 
             Person person = personAddRequest.ToPerson();
 
-            _persons.Add(person);
+            _db.Persons.Add(person);
+            await _db.SaveChangesAsync();
+            //_db.sp_InsertPerson(person);
 
-            return ConvertPersonToPersonResponse(person);
+            return person.ToPersonResponse();
         }
 
-        public List<PersonResponse> GetAllPersons()
+        public async Task<List<PersonResponse>> GetAllPersons()
         {
-            return _persons.Select(person => ConvertPersonToPersonResponse(person)).ToList();
+            List<Person> persons = await _db.Persons.Include("Country").ToListAsync();
+
+            return persons.Select(person => person.ToPersonResponse()).ToList();
+
+            //return _db.sp_GetAllPersons()
+            //    .Select(person => person.ToPersonResponse()).ToList();
         }
 
-        public PersonResponse? GetPersonByPersonId(Guid? personId)
+        public async Task<PersonResponse?> GetPersonByPersonId(Guid? personId)
         {
             if(personId == null)
             {
                 return null;
             }
 
-            Person? person = _persons.FirstOrDefault(person => person.PersonId == personId);
+            Person? person = await _db.Persons.Include("Country")
+                .FirstOrDefaultAsync(person => person.PersonId == personId);
+
             if (person == null)
             {
                 return null;
             }
 
-            return ConvertPersonToPersonResponse(person);
+            return person.ToPersonResponse();
         }
 
-        public List<PersonResponse> GetFilteredPersons(string searchBy, string? searchString)
+        public async Task<List<PersonResponse>> GetFilteredPersons(string searchBy, string? searchString)
         {
-            List<PersonResponse> allPersons = GetAllPersons();
+            List<PersonResponse> allPersons = await  GetAllPersons();
             List<PersonResponse> matchingPersons = allPersons;
 
             if(string.IsNullOrEmpty(searchBy) || string.IsNullOrEmpty(searchString))
@@ -201,7 +137,7 @@ namespace Services
             return matchingPersons;
         }
 
-        public List<PersonResponse> GetSortedPersons(List<PersonResponse> allPersons, string sortBy, SortOrderOptions sortOrder)
+        public async Task<List<PersonResponse>> GetSortedPersons(List<PersonResponse> allPersons, string sortBy, SortOrderOptions sortOrder)
         {
            if(string.IsNullOrEmpty(sortBy))
             {
@@ -248,7 +184,7 @@ namespace Services
             return sortedPersons;
         }
 
-        public PersonResponse UpdatePerson(PersonUpdateRequest? personUpdateRequest)
+        public async Task<PersonResponse> UpdatePerson(PersonUpdateRequest? personUpdateRequest)
         {
             if(personUpdateRequest == null)
             {
@@ -259,7 +195,7 @@ namespace Services
             ValidationHelper.ModelValidation(personUpdateRequest);
 
             // Get matching person object from _persons list
-            Person? matchingPerson = _persons.FirstOrDefault(temp => temp.PersonId == personUpdateRequest.PersonId);
+            Person? matchingPerson = await _db.Persons.FirstOrDefaultAsync(temp => temp.PersonId == personUpdateRequest.PersonId);
 
             if(matchingPerson == null)
             {
@@ -275,24 +211,28 @@ namespace Services
             matchingPerson.Address = personUpdateRequest.Address;
             matchingPerson.ReceiveNewsLetters = personUpdateRequest.ReceiveNewsLetters;
 
+            await _db.SaveChangesAsync();
 
-            return ConvertPersonToPersonResponse(matchingPerson);
+            return matchingPerson.ToPersonResponse();
         }
 
-        public bool DeletePerson(Guid? personId)
+        public async Task<bool> DeletePerson(Guid? personId)
         {
             if(personId == null)
             {
                 throw new ArgumentNullException(nameof(personId));
             }
 
-            Person? matchingPerson = _persons.FirstOrDefault(temp => temp.PersonId == personId);
+            Person? matchingPerson = await _db.Persons.FirstOrDefaultAsync(temp => temp.PersonId == personId);
             if(matchingPerson == null)
             {
                 return false;
             }
 
-            _persons.RemoveAll(person => person.PersonId == personId);
+            _db.Persons.Remove(
+                _db.Persons.First(person => person.PersonId == personId));
+
+            await _db.SaveChangesAsync();
 
             return true;
         }

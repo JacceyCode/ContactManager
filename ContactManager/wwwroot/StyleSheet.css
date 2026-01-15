@@ -24,8 +24,12 @@
     box-shadow: 0px 1px 2px 2px #cacaca; 
 }
 
-.centered {
+.body-centered {
     max-width: 1400px;
+    margin-inline: auto;
+}
+
+.box-centered {
     margin-inline: auto;
 }
 
