@@ -5,19 +5,29 @@ using ServiceContracts;
 using ServiceContracts.DTO;
 using Services;
 using Microsoft.EntityFrameworkCore;
+using EntityFrameworkCoreMock;
+using Moq;
+using AutoFixture;
 
 namespace ContactManagerTest
 {
     public class CountryServiceTest
     {
         private readonly ICountriesService _countriesService;
+        private readonly IFixture _fixture;
 
         public CountryServiceTest()
         {
-            _countriesService = new CountriesService(
-                new ContactManagerDbContext(
-                    new DbContextOptionsBuilder<ContactManagerDbContext>().Options
-                    ));
+            _fixture = new Fixture();
+            var countriesInitialData = new List<Country>() { };
+
+            DbContextMock<ApplicationDbContext> dbContextMock = new DbContextMock<ApplicationDbContext>(
+                new DbContextOptionsBuilder<ApplicationDbContext>().Options);
+
+            ApplicationDbContext dbContext = dbContextMock.Object;
+            dbContextMock.CreateDbSetMock(temp => temp.Countries, countriesInitialData);
+
+            _countriesService = new CountriesService(dbContext);
         }
 
         #region AddCountry Tests
@@ -40,10 +50,9 @@ namespace ContactManagerTest
         public async Task AddCountry_NullCountryName_ThrowsArgumentException()
         {
             // Arrange
-            CountryAddRequest request = new()
-            {
-                CountryName = null
-            };
+            CountryAddRequest request = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, null as string)
+                .Create();
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(async () => await _countriesService.AddCountry(request));
         }
@@ -53,14 +62,13 @@ namespace ContactManagerTest
         public async Task AddCountry_DuplicateCountryName_ThrowsArgumentException()
         {
             // Arrange
-            CountryAddRequest request1 = new()
-            {
-                CountryName = "USA"
-            };
-            CountryAddRequest request2 = new()
-            {
-                CountryName = "USA"
-            };
+            CountryAddRequest request1 = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, "USA")
+                .Create();
+            CountryAddRequest request2 = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, "USA")
+                .Create();
+
             // Act
             await _countriesService.AddCountry(request1);
 
@@ -73,10 +81,8 @@ namespace ContactManagerTest
         public async Task AddCountry_ValidCountryName_ReturnsCountryResponse()
         {
             // Arrange
-            CountryAddRequest request = new()
-            {
-                CountryName = "Canada"
-            };
+            CountryAddRequest request = _fixture.Build<CountryAddRequest>()
+                .Create();
             // Act
             CountryResponse response = await _countriesService.AddCountry(request);
 
@@ -108,14 +114,12 @@ namespace ContactManagerTest
         public async Task GetAllCountries_CountriesPresent_ReturnsListOfCountries()
         {
             // Arrange
-            CountryAddRequest request1 = new()
-            {
-                CountryName = "India"
-            };
-            CountryAddRequest request2 = new()
-            {
-                CountryName = "Germany"
-            };
+            CountryAddRequest request1 = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, "India")
+                .Create();
+            CountryAddRequest request2 = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, "Germany")
+                .Create();
 
             await _countriesService.AddCountry(request1);
             await _countriesService.AddCountry(request2);
@@ -148,10 +152,10 @@ namespace ContactManagerTest
         public async Task GetCountryByCountryId_ValidCountryId_ReturnsCountryResponse()
         {
             // Arrange
-            CountryAddRequest request = new()
-            {
-                CountryName = "Australia"
-            };
+            CountryAddRequest request = _fixture.Build<CountryAddRequest>()
+                .With(temp => temp.CountryName, "Australia")
+                .Create();
+            
             CountryResponse addedCountry = await _countriesService.AddCountry(request);
             Guid? countryId = addedCountry.CountryId;
 

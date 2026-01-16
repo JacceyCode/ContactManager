@@ -9,9 +9,9 @@ namespace Services
 {
     public class CountriesService : ICountriesService
     {
-        private readonly ContactManagerDbContext _db;
+        private readonly ApplicationDbContext _db;
 
-        public CountriesService(ContactManagerDbContext contactManagerDbContext)
+        public CountriesService(ApplicationDbContext contactManagerDbContext)
         {
             _db = contactManagerDbContext;
         }
