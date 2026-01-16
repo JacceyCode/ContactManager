@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using EntityFrameworkCoreMock;
 using Moq;
 using AutoFixture;
+using FluentAssertions;
 
 namespace ContactManagerTest
 {
@@ -42,7 +43,12 @@ namespace ContactManagerTest
             //_countriesService.AddCountry(request);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _countriesService.AddCountry(request));
+            Func<Task> action = async () => await _countriesService.AddCountry(request);
+
+            await action.Should().ThrowAsync<ArgumentNullException>();
+
+
+            //await Assert.ThrowsAsync<ArgumentNullException>(async () => await _countriesService.AddCountry(request));
         }
 
         // When countryName is null or empty, AddCountry should throw ArgumentException
@@ -54,7 +60,12 @@ namespace ContactManagerTest
                 .With(temp => temp.CountryName, null as string)
                 .Create();
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _countriesService.AddCountry(request));
+            Func<Task> action = async () => await _countriesService.AddCountry(request);
+
+            await action.Should().ThrowAsync<ArgumentException>();
+
+
+            //await Assert.ThrowsAsync<ArgumentException>(async () => await _countriesService.AddCountry(request));
         }
 
         // When countryName is duplicate, AddCountry should throw ArgumentException
@@ -73,7 +84,12 @@ namespace ContactManagerTest
             await _countriesService.AddCountry(request1);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _countriesService.AddCountry(request2));
+            Func<Task> action = async () => await _countriesService.AddCountry(request2);
+
+            await action.Should().ThrowAsync<ArgumentException>();
+
+
+            //await Assert.ThrowsAsync<ArgumentException>(async () => await _countriesService.AddCountry(request2));
         }
 
         // When valid countryName is provided, AddCountry should insert country into a list and return CountryResponse with valid CountryId and CountryName
@@ -87,10 +103,16 @@ namespace ContactManagerTest
             CountryResponse response = await _countriesService.AddCountry(request);
 
             // Assert
-            Assert.NotNull(response);
-            Assert.Equal(request.CountryName, response.CountryName);
-            Assert.NotEqual(Guid.Empty, response.CountryId);
-            Assert.True(response.CountryId != Guid.Empty);
+            response.Should().NotBeNull();
+            response.CountryName.Should().Be(request.CountryName);
+            response.CountryId.Should().NotBe(Guid.Empty);
+
+
+
+            //Assert.NotNull(response);
+            //Assert.Equal(request.CountryName, response.CountryName);
+            //Assert.NotEqual(Guid.Empty, response.CountryId);
+            //Assert.True(response.CountryId != Guid.Empty);
         }
         #endregion
 
@@ -105,8 +127,10 @@ namespace ContactManagerTest
             List<CountryResponse> countries = await _countriesService.GetAllCountries();
 
             // Assert
-            Assert.NotNull(countries);
-            Assert.Empty(countries);
+            countries.Should().NotBeNull();
+            countries.Should().BeEmpty();
+            //Assert.NotNull(countries);
+            //Assert.Empty(countries);
         }
 
         // When countries are present, GetAllCountries should return list of countries
@@ -128,10 +152,14 @@ namespace ContactManagerTest
             List<CountryResponse> countries = await _countriesService.GetAllCountries();
 
             // Assert
-            Assert.NotNull(countries);
-            Assert.Equal(2, countries.Count);
-            Assert.Contains(countries, c => c.CountryName == "India");
-            Assert.Contains(countries, c => c.CountryName == "Germany");
+            countries.Should().NotBeNull();
+            countries.Should().HaveCount(2);
+            countries.Should().Contain(c => c.CountryName == "India");
+            countries.Should().Contain(c => c.CountryName == "Germany");
+            //Assert.NotNull(countries);
+            //Assert.Equal(2, countries.Count);
+            //Assert.Contains(countries, c => c.CountryName == "India");
+            //Assert.Contains(countries, c => c.CountryName == "Germany");
         }
         #endregion
 
@@ -143,8 +171,14 @@ namespace ContactManagerTest
             // Arrange
             Guid? countryId = null;
 
-            // Act & Assert
-            Assert.Null(await _countriesService.GetCountryByCountryId(countryId));
+            // Act
+            CountryResponse? result = await _countriesService.GetCountryByCountryId(countryId);
+
+            // Assert
+            result.Should().BeNull();
+
+
+            //Assert.Null(await _countriesService.GetCountryByCountryId(countryId));
         }
 
         // Valid countryId should return country details
@@ -163,9 +197,14 @@ namespace ContactManagerTest
             CountryResponse? countryResponse = await _countriesService.GetCountryByCountryId(countryId);
 
             // Assert
-            Assert.NotNull(countryResponse);
-            Assert.Equal(addedCountry.CountryId, countryResponse!.CountryId);
-            Assert.Equal(addedCountry.CountryName, countryResponse.CountryName);
+            countryResponse.Should().NotBeNull();
+            countryResponse!.CountryId.Should().Be(addedCountry.CountryId);
+            countryResponse.CountryName.Should().Be(addedCountry.CountryName);
+
+
+            //Assert.NotNull(countryResponse);
+            //Assert.Equal(addedCountry.CountryId, countryResponse!.CountryId);
+            //Assert.Equal(addedCountry.CountryName, countryResponse.CountryName);
         }
         #endregion
     }

@@ -1,13 +1,15 @@
-﻿using System;
+﻿using AutoFixture;
+using Azure.Core;
 using Entities;
 using EntityFrameworkCoreMock;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using ServiceContracts;
 using ServiceContracts.DTO;
 using ServiceContracts.Enums;
 using Services;
+using System;
 using Xunit.Abstractions;
-using AutoFixture;
 
 namespace ContactManagerTest
 {
@@ -51,7 +53,11 @@ namespace ContactManagerTest
             PersonAddRequest? request = null;
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.AddPerson(request));
+            Func<Task> action = async () => await _personsService.AddPerson(request);
+
+            await action.Should().ThrowAsync<ArgumentNullException>();
+
+            //await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.AddPerson(request));
         }
 
         // When personName is null, throws ArgumentException
@@ -64,7 +70,11 @@ namespace ContactManagerTest
                 .Create();
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.AddPerson(personAddRequest));
+            Func<Task> action = async () => await _personsService.AddPerson(personAddRequest);
+
+            await action.Should().ThrowAsync<ArgumentException>();
+
+            //await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.AddPerson(personAddRequest));
         }
 
         // When valid PersonAddRequest is provided, AddPerson should return PersonResponse with same details
@@ -82,11 +92,16 @@ namespace ContactManagerTest
             List<PersonResponse> persons = await _personsService.GetAllPersons();
 
             // Assert
-            Assert.NotNull(person);
-            Assert.True(person.PersonId != Guid.Empty);
-            Assert.True(person.ReceiveNewsLetters);
+            person.Should().NotBeNull();
+            person.PersonId.Should().NotBe(Guid.Empty);
+            person.ReceiveNewsLetters.Should().Be(personAddRequest.ReceiveNewsLetters);
+            persons.Should().Contain(person);
 
-            Assert.Contains(person, persons);
+            //Assert.NotNull(person);
+            //Assert.True(person.PersonId != Guid.Empty);
+            //Assert.True(person.ReceiveNewsLetters);
+
+            //Assert.Contains(person, persons);
         }
         #endregion
 
@@ -103,7 +118,9 @@ namespace ContactManagerTest
             PersonResponse? person = await _personsService.GetPersonByPersonId(personId);
 
             // Assert
-            Assert.Null(person);
+            person.Should().BeNull();
+            //Assert.Null(person);
+
         }
 
         // When valid personId is provided, GetPersonByPersonId should return PersonResponse with same personId
@@ -124,9 +141,12 @@ namespace ContactManagerTest
             PersonResponse? fetchedPerson = await _personsService.GetPersonByPersonId(addedPerson.PersonId);
 
             // Assert
-            Assert.NotNull(addedPerson);
-            Assert.NotNull(fetchedPerson);
-            Assert.Equal(addedPerson, fetchedPerson);
+            addedPerson.Should().NotBeNull();
+            fetchedPerson.Should().NotBeNull();
+            fetchedPerson.Should().BeEquivalentTo(addedPerson);
+            //Assert.NotNull(addedPerson);
+            //Assert.NotNull(fetchedPerson);
+            //Assert.Equal(addedPerson, fetchedPerson);
         }
 
         #endregion
@@ -141,8 +161,10 @@ namespace ContactManagerTest
             List<PersonResponse> persons = await _personsService.GetAllPersons();
 
             // Assert
-            Assert.NotNull(persons);
-            Assert.Empty(persons);
+            persons.Should().NotBeNull();
+            persons.Should().BeEmpty();
+            //Assert.NotNull(persons);
+            //Assert.Empty(persons);
         }
 
         // When multiple persons are added, GetAllPersons should return all added persons
@@ -200,14 +222,17 @@ namespace ContactManagerTest
             }
 
             // Assert
-            Assert.NotNull(fetchedPersons);
-            Assert.Equal(persons_response.Count, fetchedPersons.Count);
-            Assert.Equal(persons_response, fetchedPersons);
+            fetchedPersons.Should().NotBeNull();
+            fetchedPersons.Should().HaveCount(persons_response.Count);
+            fetchedPersons.Should().BeEquivalentTo(persons_response);
+            //Assert.NotNull(fetchedPersons);
+            //Assert.Equal(persons_response.Count, fetchedPersons.Count);
+            //Assert.Equal(persons_response, fetchedPersons);
 
-            foreach (PersonResponse person in persons_response)
-            {
-                Assert.Contains(person, fetchedPersons);
-            }
+            //foreach (PersonResponse person in persons_response)
+            //{
+            //    Assert.Contains(person, fetchedPersons);
+            //}
         }
         #endregion
 
@@ -268,14 +293,17 @@ namespace ContactManagerTest
             }
 
             // Assert
-            Assert.NotNull(filteredPersons);
-            Assert.Equal(persons_response.Count, filteredPersons.Count);
-            Assert.Equal(persons_response, filteredPersons);
+            filteredPersons.Should().NotBeNull();
+            filteredPersons.Should().HaveCount(persons_response.Count);
+            filteredPersons.Should().BeEquivalentTo(persons_response);
+            //Assert.NotNull(filteredPersons);
+            //Assert.Equal(persons_response.Count, filteredPersons.Count);
+            //Assert.Equal(persons_response, filteredPersons);
 
-            foreach (PersonResponse person in persons_response)
-            {
-                Assert.Contains(person, filteredPersons);
-            }
+            //foreach (PersonResponse person in persons_response)
+            //{
+            //    Assert.Contains(person, filteredPersons);
+            //}
         }
 
         // Add few persons and search based on personName with searchString to return matching persons
@@ -325,13 +353,17 @@ namespace ContactManagerTest
             List<PersonResponse> filteredPersons = await _personsService.GetFilteredPersons(nameof(Person.PersonName), "ma"); // searchString = 'ma'
 
             // Assert
-            foreach (PersonResponse person in persons_response)
-            {
-                if (person.PersonName != null && person.PersonName.Contains("ma", StringComparison.OrdinalIgnoreCase))
-                {
-                    Assert.Contains(person, filteredPersons);
-                }
-            }
+            filteredPersons.Should().OnlyContain(filteredPersons => filteredPersons.PersonName != null && filteredPersons.PersonName.Contains("ma", StringComparison.OrdinalIgnoreCase));
+
+
+
+            //foreach (PersonResponse person in persons_response)
+            //{
+            //    if (person.PersonName != null && person.PersonName.Contains("ma", StringComparison.OrdinalIgnoreCase))
+            //    {
+            //        Assert.Contains(person, filteredPersons);
+            //    }
+            //}
         }
 
         #endregion
@@ -384,14 +416,16 @@ namespace ContactManagerTest
 
             List<PersonResponse> sortedPersonsDesc = await _personsService.GetSortedPersons(allPersons, nameof(Person.PersonName), SortOrderOptions.DESC);
 
-            persons_response = persons_response.OrderByDescending(person => person.PersonName).ToList();
+            //persons_response = persons_response.OrderByDescending(person => person.PersonName).ToList();
 
 
             // Assert
-            for (int i = 0; i < persons_response.Count; i++)
-            {
-                Assert.Equal(persons_response[i], sortedPersonsDesc[i]);
-            }
+            //sortedPersonsDesc.Should().BeEquivalentTo(persons_response);
+            sortedPersonsDesc.Should().BeInDescendingOrder(person => person.PersonName);
+            //for (int i = 0; i < persons_response.Count; i++)
+            //{
+            //    Assert.Equal(persons_response[i], sortedPersonsDesc[i]);
+            //}
         }
 
 
@@ -405,7 +439,12 @@ namespace ContactManagerTest
             // Arrange
             PersonUpdateRequest? request = null;
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.UpdatePerson(request));
+            Func<Task> action = async () => await _personsService.UpdatePerson(request);
+
+            await action.Should().ThrowAsync<ArgumentNullException>();
+
+
+            //await Assert.ThrowsAsync<ArgumentNullException>(async () => await _personsService.UpdatePerson(request));
         }
 
         // When personId is not found, UpdatePerson should throw ArgumentException
@@ -417,7 +456,12 @@ namespace ContactManagerTest
                 .Create();
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
+            Func<Task> action = async () => await _personsService.UpdatePerson(personUpdateRequest);
+
+            await action.Should().ThrowAsync<ArgumentException>();
+
+
+            //await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
 
         }
 
@@ -444,7 +488,11 @@ namespace ContactManagerTest
             personUpdateRequest.Email = "tonydon@example.com";
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
+            Func<Task> action = async () => await _personsService.UpdatePerson(personUpdateRequest);
+
+            await action.Should().ThrowAsync<ArgumentException>();
+
+            //await Assert.ThrowsAsync<ArgumentException>(async () => await _personsService.UpdatePerson(personUpdateRequest));
         }
 
         // When valid PersonUpdateRequest is provided, UpdatePerson should return updated PersonResponse
@@ -475,7 +523,8 @@ namespace ContactManagerTest
             PersonResponse? personResponseFromId = await _personsService.GetPersonByPersonId(updatedPerson.PersonId);
 
             // Assert
-            Assert.Equal(personResponseFromId, updatedPerson);
+            updatedPerson.Should().Be(personResponseFromId);
+            //Assert.Equal(personResponseFromId, updatedPerson);
         }
 
         #endregion
@@ -493,7 +542,8 @@ namespace ContactManagerTest
             bool result = await _personsService.DeletePerson(personId);
 
             // Assert
-            Assert.False(result);
+            result.Should().BeFalse();
+            //Assert.False(result);
         }
 
         // When valid personId is provided, DeletePerson should return true
@@ -518,7 +568,8 @@ namespace ContactManagerTest
             bool isDeleted = await _personsService.DeletePerson(person.PersonId);
 
             // Assert
-            Assert.True(isDeleted);
+            isDeleted.Should().BeTrue();
+            //Assert.True(isDeleted);
         }
         #endregion
     }
