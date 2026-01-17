@@ -2,6 +2,8 @@
   <Project Path="ContactManager/ContactManager.csproj" />
   <Project Path="ContactManagerTest/ContactManagerTest.csproj" />
   <Project Path="Entities/Entities.csproj" />
+  <Project Path="Repositories/Repositories.csproj" Id="781a7055-d6fd-43ab-a48c-3e4e83299ecd" />
+  <Project Path="RepositoryContracts/RepositoryContracts.csproj" Id="7305e028-52b4-484a-b530-0e73fa4d623b" />
   <Project Path="ServiceContracts/ServiceContracts.csproj" />
   <Project Path="Services/Services.csproj" />
 </Solution>
