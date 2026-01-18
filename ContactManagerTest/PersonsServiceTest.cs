@@ -457,8 +457,6 @@ namespace ContactManagerTest
             PersonResponse person_response_expected = person.ToPersonResponse();
 
             PersonUpdateRequest personUpdateRequest = person_response_expected.ToPersonUpdateRequest();
-            //personUpdateRequest.PersonName = "Tony Don";
-            //personUpdateRequest.Email = "tonydon@example.com";
 
             // Mock
             _personRepositoryMock.Setup(temp => temp.UpdatePerson(It.IsAny<Person>()))
