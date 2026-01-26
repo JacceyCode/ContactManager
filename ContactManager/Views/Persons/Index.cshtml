@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <table class="table w-100 mt">
+    <table class="table w-100 mt persons">
         <thead>
             <tr>
                @await Html.PartialAsync("_GridColumnHeader", new ViewDataDictionary(ViewData)
@@ -106,11 +106,11 @@
             @foreach (PersonResponse person in Model)
             {
                 <tr>
-                    <td style="width:10%">@person.PersonName</td>
+                    <td style="width:13%">@person.PersonName</td>
                     <td style="width:15%">@person.Email</td>
                     <td style="width:10%">@person.DateOfBirth?.ToString("dd MMM yyyy")</td>
-                    <td style="width:7%">@person.Age</td>
-                    <td style="width:8%">@person.Gender</td>
+                    <td style="width:5%">@person.Age</td>
+                    <td style="width:7%">@person.Gender</td>
                     <td style="width:10%">@person.Country</td>
                     <td style="width:15%">@person.Address</td>
                     <td style="width:10%">@person.ReceiveNewsLetters</td>

@@ -35,10 +35,16 @@ if(builder.Environment.IsDevelopment())
 //    app.UseHsts();
 //}
 
+if(builder.Environment.IsEnvironment("Test") == false)
+{
 Rotativa.AspNetCore.RotativaConfiguration.Setup("wwwroot", wkhtmltopdfRelativePath: "Rotativa");
+}
 
 app.UseStaticFiles();
 app.UseRouting();
 app.MapControllers();
 
 app.Run();
+
+
+public partial class Program { } // Makes the auto-generated Program class accessible programmatically
