@@ -4,8 +4,31 @@ using Microsoft.EntityFrameworkCore;
 using Entities;
 using RepositoryContracts;
 using Repositories;
+using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging
+//builder.Host.ConfigureLogging(loggingProvider =>
+//{
+//    loggingProvider.ClearProviders();
+//    loggingProvider.AddConsole();
+//});
+//builder.Logging.ClearProviders().AddConsole().AddDebug().AddEventLog();
+
+// Logging
+//builder.Host.ConfigureLogging(loggingProvider =>
+//{
+//    loggingProvider.ClearProviders();
+//    loggingProvider.AddConsole();
+//});
+builder.Logging.ClearProviders().AddConsole().AddDebug();
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+    builder.Logging.AddEventLog();
+}
+
+
 builder.Services.AddControllersWithViews();
 
 // Registering CountriesService as a scoped service
