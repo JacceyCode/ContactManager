@@ -13,6 +13,8 @@ using ServiceContracts.Enums;
 using Services;
 using Xunit.Abstractions;
 using System.Linq.Expressions;
+using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace ContactManagerTest
 {
@@ -32,9 +34,11 @@ namespace ContactManagerTest
 
             _personRepositoryMock = new Mock<IPersonsRepository>();
             _personsRepository = _personRepositoryMock.Object;
+            var loggerMock = new Mock<ILogger<PersonsService>>();
+            var diagnosticContextMock = new Mock<IDiagnosticContext>();
 
             
-            _personsService = new PersonsService(_personsRepository);
+            _personsService = new PersonsService(_personsRepository, loggerMock.Object, diagnosticContextMock.Object);
             
             _testOutputHelper = testOutputHelper;
         }

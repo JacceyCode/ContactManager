@@ -5,6 +5,7 @@ using Entities;
 using RepositoryContracts;
 using Repositories;
 using System.Runtime.InteropServices;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,12 +23,20 @@ var builder = WebApplication.CreateBuilder(args);
 //    loggingProvider.ClearProviders();
 //    loggingProvider.AddConsole();
 //});
-builder.Logging.ClearProviders().AddConsole().AddDebug();
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-{
-    builder.Logging.AddEventLog();
-}
 
+//builder.Logging.ClearProviders().AddConsole().AddDebug();
+//if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+//{
+//    builder.Logging.AddEventLog();
+//}
+
+
+// Serilog
+builder.Host.UseSerilog((HostBuilderContext context, IServiceProvider services, LoggerConfiguration loggerConfiguration) => { 
+    loggerConfiguration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services);
+});
 
 builder.Services.AddControllersWithViews();
 
@@ -50,9 +59,6 @@ builder.Services.AddHttpLogging(options =>
     options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestProperties | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
 });
 
-
-//Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=ContactManagerDatabase;Integrated Security=True;Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30
-
 var app = builder.Build();
 
 if(builder.Environment.IsDevelopment())
@@ -70,6 +76,7 @@ if(builder.Environment.IsEnvironment("Test") == false)
 Rotativa.AspNetCore.RotativaConfiguration.Setup("wwwroot", wkhtmltopdfRelativePath: "Rotativa");
 }
 
+app.UseSerilogRequestLogging();
 app.UseHttpLogging();
 app.UseStaticFiles();
 app.UseRouting();
