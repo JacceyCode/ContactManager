@@ -6,6 +6,7 @@ using RepositoryContracts;
 using Repositories;
 using System.Runtime.InteropServices;
 using Serilog;
+using ContactManager.Filters.ActionFilters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,15 @@ builder.Host.UseSerilog((HostBuilderContext context, IServiceProvider services, 
     .ReadFrom.Services(services);
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // Global filter registrations can be done here
+    //options.Filters.Add<ResponseHeaderActionFilter>(); // Default constructor will be used
+
+    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<ResponseHeaderActionFilter>>();
+
+    options.Filters.Add(new ResponseHeaderActionFilter(logger, "X-Global-Header", "Global-Value", 2)); // Parameterized constructor will be used
+});
 
 // Registering CountriesService as a scoped service
 builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
