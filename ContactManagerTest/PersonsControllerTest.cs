@@ -7,6 +7,7 @@ using ContactManager.Controllers;
 using ServiceContracts.Enums;
 using Microsoft.AspNetCore.Mvc;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 
 namespace ContactManagerTest
 {
@@ -14,9 +15,11 @@ namespace ContactManagerTest
     {
         private readonly IPersonsService _personsService;
         private readonly ICountriesService _countriesService;
+        private readonly ILogger<PersonsController> _logger;
 
         private readonly Mock<IPersonsService> _personsServiceMock;
         private readonly Mock<ICountriesService> _countriesServiceMock;
+        private readonly Mock<ILogger<PersonsController>> _loggerMock;
 
         private readonly IFixture _fixture;
 
@@ -26,9 +29,11 @@ namespace ContactManagerTest
 
             _personsServiceMock = new Mock<IPersonsService>();
             _countriesServiceMock = new Mock<ICountriesService>();
+            _loggerMock = new Mock<ILogger<PersonsController>>();
 
             _personsService = _personsServiceMock.Object;
             _countriesService = _countriesServiceMock.Object;
+            _logger = _loggerMock.Object;
         }
 
         #region Index
@@ -38,7 +43,7 @@ namespace ContactManagerTest
             // Arrange
             List<PersonResponse> persons_response_list = _fixture.Create<List<PersonResponse>>();
 
-            PersonsController personsController = new PersonsController(_personsService, _countriesService);
+            PersonsController personsController = new PersonsController(_personsService, _countriesService, _logger);
 
             // Mock
             _personsServiceMock.Setup(temp => temp.GetFilteredPersons(It.IsAny<string>(), It.IsAny<string>()))
@@ -71,7 +76,7 @@ namespace ContactManagerTest
 
             List<CountryResponse> countries = _fixture.Create<List<CountryResponse>>();
 
-            PersonsController personsController = new PersonsController(_personsService, _countriesService);
+            PersonsController personsController = new PersonsController(_personsService, _countriesService, _logger);
 
             // Mock
             _countriesServiceMock.Setup(temp => temp.GetAllCountries())
@@ -86,10 +91,9 @@ namespace ContactManagerTest
             IActionResult result = await personsController.Create(person_add_request);
 
             // Assert
-            ViewResult viewResult = Assert.IsType<ViewResult>(result);
+            RedirectToActionResult redirectResult = Assert.IsType<RedirectToActionResult>(result);
 
-            //viewResult.ViewData.Model.Should().BeAssignableTo<PersonAddRequest>();
-            //viewResult.ViewData.Model.Should().Be(person_add_request);
+            redirectResult.ActionName.Should().Be("Index");
         }
 
         [Fact]
@@ -102,7 +106,7 @@ namespace ContactManagerTest
 
             List<CountryResponse> countries = _fixture.Create<List<CountryResponse>>();
 
-            PersonsController personsController = new PersonsController(_personsService, _countriesService);
+            PersonsController personsController = new PersonsController(_personsService, _countriesService, _logger);
 
             // Mock
             _countriesServiceMock.Setup(temp => temp.GetAllCountries())

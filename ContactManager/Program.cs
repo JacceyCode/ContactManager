@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Entities;
 using RepositoryContracts;
 using Repositories;
-using System.Runtime.InteropServices;
 using Serilog;
 using ContactManager.Filters.ActionFilters;
+using ContactManager;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,46 +33,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Serilog
-builder.Host.UseSerilog((HostBuilderContext context, IServiceProvider services, LoggerConfiguration loggerConfiguration) => { 
+builder.Host.UseSerilog((HostBuilderContext context, IServiceProvider builder, LoggerConfiguration loggerConfiguration) => { 
     loggerConfiguration
     .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services);
+    .ReadFrom.Services(builder);
 });
 
-// service filter registration
-builder.Services.AddTransient<PersonsListActionFilter>();
-builder.Services.AddTransient<ResponseHeaderActionFilter>();
+// Configure builder
+builder.Services.ConfigureServices(builder.Configuration);
 
-builder.Services.AddControllersWithViews(options =>
-{
-    // Global filter registrations can be done here
-    //options.Filters.Add<ResponseHeaderActionFilter>(); // Default constructor will be used
-
-    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<ResponseHeaderActionFilter>>();
-
-    options.Filters.Add(new ResponseHeaderActionFilter(logger) { Key = "X-Global-Header", Value = "Global-Value", Order = 2 }); // Parameterized constructor will be used
-});
-
-// Registering CountriesService as a scoped service
-builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
-builder.Services.AddScoped<IPersonsRepository, PersonsRepository>();
-builder.Services.AddScoped<ICountriesService, CountriesService>();
-builder.Services.AddScoped<IPersonsService, PersonsService>();
-
-
-
-// DB Context service registration
-builder.Services.AddDbContext<ApplicationDbContext>(
-    options =>
-    {
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-    });
-
-// Register logging service
-builder.Services.AddHttpLogging(options =>
-{
-    options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestProperties | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
-});
 
 var app = builder.Build();
 

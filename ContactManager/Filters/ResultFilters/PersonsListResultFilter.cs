@@ -15,12 +15,12 @@ namespace ContactManager.Filters.ResultFilters
         {
             _logger.LogInformation("{FilterName} {MethodName} method - before", nameof(PersonsListResultFilter), nameof(OnResultExecutionAsync));
 
+            context.HttpContext.Response.Headers["Last-Modified"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+
 
             await next();
 
-            _logger.LogInformation("{FilterName} {MethodName} method - before", nameof(PersonsListResultFilter), nameof(OnResultExecutionAsync));
-
-            context.HttpContext.Response.Headers["Last-Modified"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm"); 
+            _logger.LogInformation("{FilterName} {MethodName} method - before", nameof(PersonsListResultFilter), nameof(OnResultExecutionAsync)); 
         }
     }
 }
