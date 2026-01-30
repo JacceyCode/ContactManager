@@ -39,6 +39,10 @@ builder.Host.UseSerilog((HostBuilderContext context, IServiceProvider services, 
     .ReadFrom.Services(services);
 });
 
+// service filter registration
+builder.Services.AddTransient<PersonsListActionFilter>();
+builder.Services.AddTransient<ResponseHeaderActionFilter>();
+
 builder.Services.AddControllersWithViews(options =>
 {
     // Global filter registrations can be done here
@@ -46,7 +50,7 @@ builder.Services.AddControllersWithViews(options =>
 
     var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<ResponseHeaderActionFilter>>();
 
-    options.Filters.Add(new ResponseHeaderActionFilter(logger, "X-Global-Header", "Global-Value", 2)); // Parameterized constructor will be used
+    options.Filters.Add(new ResponseHeaderActionFilter(logger) { Key = "X-Global-Header", Value = "Global-Value", Order = 2 }); // Parameterized constructor will be used
 });
 
 // Registering CountriesService as a scoped service
@@ -54,6 +58,8 @@ builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
 builder.Services.AddScoped<IPersonsRepository, PersonsRepository>();
 builder.Services.AddScoped<ICountriesService, CountriesService>();
 builder.Services.AddScoped<IPersonsService, PersonsService>();
+
+
 
 // DB Context service registration
 builder.Services.AddDbContext<ApplicationDbContext>(
