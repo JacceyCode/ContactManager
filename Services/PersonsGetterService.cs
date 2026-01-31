@@ -1,0 +1,198 @@
+﻿using System;
+using CsvHelper;
+using System.Globalization;
+using System.IO;
+using Entities;
+using Microsoft.EntityFrameworkCore;
+using ServiceContracts;
+using ServiceContracts.DTO;
+using ServiceContracts.Enums;
+using Services.Helpers;
+using CsvHelper.Configuration;
+using OfficeOpenXml;
+using RepositoryContracts;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using SerilogTimings;
+using Exceptions;
+
+namespace Services
+{
+    public class PersonsGetterService : IPersonsGetterService
+    {
+        private readonly IPersonsRepository _personsRepository;
+        private readonly ILogger<PersonsService> _logger;
+        private readonly IDiagnosticContext _diagnosticContext;
+
+        public PersonsGetterService(IPersonsRepository personsRepository, ILogger<PersonsService> logger, IDiagnosticContext diagnosticContext)
+        {
+            _personsRepository = personsRepository;
+            _logger = logger;
+            _diagnosticContext = diagnosticContext;
+        }
+
+        public async Task<List<PersonResponse>> GetAllPersons()
+        {
+            _logger.LogInformation("GetAllPersons of PersonsService");
+            List<Person> persons = await _personsRepository.GetAllPersons();
+
+            return persons.Select(person => person.ToPersonResponse()).ToList();
+        }
+
+        public async Task<PersonResponse?> GetPersonByPersonId(Guid? personId)
+        {
+            if(personId == null)
+            {
+                return null;
+            }
+
+            Person? person = await _personsRepository.GetPersonByPersonId(personId.Value);
+
+            if (person == null)
+            {
+                return null;
+            }
+
+            return person.ToPersonResponse();
+        }
+
+        public async Task<List<PersonResponse>> GetFilteredPersons(string searchBy, string? searchString)
+        {
+            _logger.LogInformation("GetFilteredPersons of PersonsService");
+
+            //List<Person> persons;
+            //using (Operation.Time("Time for Filtered Persons From Database")) { // Serilog timing 
+            List<Person> persons = searchBy switch
+            {
+                nameof(PersonResponse.PersonName) =>
+                    await _personsRepository.GetFilteredPersons(person => person.PersonName
+                                             .Contains(searchString)),
+
+
+                nameof(PersonResponse.Email) =>
+                    await _personsRepository.GetFilteredPersons
+                        (person => person.Email
+                                             .Contains(searchString)),
+
+
+                nameof(PersonResponse.DateOfBirth) =>
+                    await _personsRepository.GetFilteredPersons(person => person.DateOfBirth.Value.ToString("dd MMM yyyy")
+                                             .Contains(searchString)),
+
+
+                nameof(PersonResponse.Gender) =>
+                    await _personsRepository.GetFilteredPersons(person => person.Gender
+                                             .StartsWith(searchString)),
+
+
+                nameof(PersonResponse.CountryId) =>
+                    await _personsRepository.GetFilteredPersons(person => person.Country.CountryName
+                                             .Contains(searchString)),
+
+
+                nameof(PersonResponse.Address) =>
+                    await _personsRepository.GetFilteredPersons(person => person.Address
+                                             .Contains(searchString)),
+
+                _ => await _personsRepository.GetAllPersons()
+            };
+            //}
+            _diagnosticContext.Set("Persons", persons);
+
+            return persons.Select(person => person.ToPersonResponse()).ToList();
+        }
+
+        public async Task<MemoryStream> GetPersonsCSV()
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            StreamWriter streamWriter = new StreamWriter(memoryStream);
+
+            CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture);
+
+            CsvWriter csvWriter = new CsvWriter(streamWriter, csvConfiguration);
+
+            // Headers
+            csvWriter.WriteField(nameof(PersonResponse.PersonName));
+            csvWriter.WriteField(nameof(PersonResponse.Email));
+            csvWriter.WriteField(nameof(PersonResponse.DateOfBirth));
+            csvWriter.WriteField(nameof(PersonResponse.Age));
+            csvWriter.WriteField(nameof(PersonResponse.Gender));
+            csvWriter.WriteField(nameof(PersonResponse.Country));
+            csvWriter.WriteField(nameof(PersonResponse.Address));
+            csvWriter.WriteField(nameof(PersonResponse.ReceiveNewsLetters));
+
+            csvWriter.NextRecord();
+
+            List<PersonResponse> persons = await GetAllPersons();
+
+            foreach (PersonResponse person in persons)
+            {
+                csvWriter.WriteField(person.PersonName);
+                csvWriter.WriteField(person.Email);
+                csvWriter.WriteField(person.DateOfBirth?.ToString("dd-MMM-yyyy"));
+                csvWriter.WriteField(person.Age);
+                csvWriter.WriteField(person.Gender);
+                csvWriter.WriteField(person.Country);
+                csvWriter.WriteField(person.Address);
+                csvWriter.WriteField(person.ReceiveNewsLetters);
+
+                csvWriter.NextRecord();
+                csvWriter.Flush();
+            }
+
+            memoryStream.Position = 0;
+
+            return memoryStream;
+        }
+
+        public async Task<MemoryStream> GetPersonsExcel()
+        {
+            MemoryStream memoryStream = new MemoryStream();
+
+            using (ExcelPackage excelPackage = new ExcelPackage(memoryStream))
+            {
+                ExcelWorksheet workSheet = excelPackage.Workbook.Worksheets.Add("PersonsSheet");
+                // Headers
+                workSheet.Cells[1, 1].Value = "Person Name";
+                workSheet.Cells[1, 2].Value = nameof(PersonResponse.Email);
+                workSheet.Cells[1, 3].Value = "Date of Birth";
+                workSheet.Cells[1, 4].Value = nameof(PersonResponse.Age);
+                workSheet.Cells[1, 5].Value = nameof(PersonResponse.Gender);
+                workSheet.Cells[1, 6].Value = nameof(PersonResponse.Country);
+                workSheet.Cells[1, 7].Value = nameof(PersonResponse.Address);
+                workSheet.Cells[1, 8].Value = "Receive News Letters";
+
+                using (ExcelRange headerCells = workSheet.Cells["A1:H1"]) {
+                    headerCells.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                  headerCells.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+
+                    headerCells.Style.Font.Bold = true;
+                }
+
+                int row = 2;
+                List<PersonResponse> persons = await GetAllPersons();
+
+                foreach (PersonResponse person in persons)
+                {
+                    workSheet.Cells[row, 1].Value = person.PersonName;
+                    workSheet.Cells[row, 2].Value = person.Email;
+                    workSheet.Cells[row, 3].Value = person.DateOfBirth?.ToString("dd-MMM-yyyy");
+                    workSheet.Cells[row, 4].Value = person.Age;
+                    workSheet.Cells[row, 5].Value = person.Gender;
+                    workSheet.Cells[row, 6].Value = person.Country;
+                    workSheet.Cells[row, 7].Value = person.Address;
+                    workSheet.Cells[row, 8].Value = person.ReceiveNewsLetters;
+
+                    row++;
+                }
+
+                workSheet.Cells[$"A1:H{row}"].AutoFitColumns();
+
+                await excelPackage.SaveAsAsync(memoryStream);
+            }
+
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+    }
+}
