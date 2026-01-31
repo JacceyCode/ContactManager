@@ -7,6 +7,7 @@ using Repositories;
 using Serilog;
 using ContactManager.Filters.ActionFilters;
 using ContactManager;
+using ContactManager.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,13 +50,14 @@ if(builder.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
-//else
-//{
-//    app.UseExceptionHandler("/Home/Error");
-//    app.UseHsts();
-//}
+else
+{
+    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandlingMiddleware();
+    //app.UseHsts();
+}
 
-if(builder.Environment.IsEnvironment("Test") == false)
+if (builder.Environment.IsEnvironment("Test") == false)
 {
 Rotativa.AspNetCore.RotativaConfiguration.Setup("wwwroot", wkhtmltopdfRelativePath: "Rotativa");
 }

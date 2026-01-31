@@ -14,6 +14,7 @@ using RepositoryContracts;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SerilogTimings;
+using Exceptions;
 
 namespace Services
 {
@@ -186,7 +187,7 @@ namespace Services
 
             if(matchingPerson == null)
             {
-                throw new ArgumentException($"Person with PersonId: {personUpdateRequest.PersonId} not found");
+                throw new InvalidPersonIdException($"Person with PersonId: {personUpdateRequest.PersonId} not found");
             }
 
             //Update properties
